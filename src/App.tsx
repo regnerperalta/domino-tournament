@@ -404,7 +404,7 @@ export default function App() {
           onOpenScoreEntry={() => handleOpenTableScoreEntry('tableA', activeTables.tableA)}
           onNextRound={handleNextRoundProgression}
           isNextRoundDisabled={areScoresMissing || currentRound > 6}
-          currentRound={getButtonLabel() as any}
+          currentRound={(currentRound >= 3 ? getButtonLabel() : currentRound) as any}
         />
 
         {/* --- CUSTOM ACTION: OPEN FINALS SCORES DASHBOARD POPUP --- */}
