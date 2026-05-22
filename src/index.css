@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-colmado-sand: #e6d2ad;
+  --color-colmado-cream: #f4ead7;
+  --color-colmado-paper: #fff9ec;
+  --color-colmado-accent: #fffaf0;
+  
+  --color-colmado-dark: #2d1d0f;
+  --color-colmado-wood: #5a381e;
+  --color-colmado-leather: #6f4725;
+  --color-colmado-gold: #d9a441;
+  --color-colmado-tan: #c7ab7a;
+  --color-colmado-straw: #d8c6a1;
+  --color-colmado-gold-border: #d3bb8b;
+  --color-colmado-die-bg: #f9f1dd;
+  --color-colmado-die-border: #e9d5aa;
+
+  --color-colmado-felt: #2f5e2f;
+  --color-colmado-felt-dark: #234723;
+  --color-colmado-chili: #b62f2f;
+}
+
+body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  min-h: 100vh;
+  font-family: sans-serif;
+}
