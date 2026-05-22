@@ -5,45 +5,38 @@ export default function ControlPanel({
   onOpenBracket,
   onOpenLeaderboard,
   onOpenRules,
-  onOpenScoreEntry,
+  onNextRound,
+  isNextRoundDisabled,
+  currentRound
 }: ControlPanelProps) {
   return (
-    <nav className="rounded-2xl border-4 border-colmado-wood bg-colmado-cream p-4 shadow-md flex flex-wrap gap-3 items-center justify-between">
-      <div className="text-xl font-black text-colmado-leather tracking-wide uppercase">
-        🕹️ Tournament Menu:
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-4 shadow-md">
       <div className="flex flex-wrap gap-2">
-        <button 
-          onClick={onOpenRoster}
-          className="rounded-xl bg-colmado-leather hover:bg-colmado-wood px-4 py-2 font-bold text-white shadow transition-transform active:scale-95 text-sm"
-        >
-          👥 Roster
+        <button onClick={onOpenRoster} className="rounded-xl bg-colmado-tan/30 px-4 py-2 font-bold text-sm hover:bg-colmado-tan/50">
+          Roster
         </button>
-        <button 
-          onClick={onOpenBracket}
-          className="rounded-xl bg-colmado-leather hover:bg-colmado-wood px-4 py-2 font-bold text-white shadow transition-transform active:scale-95 text-sm"
-        >
-          📊 Brackets
+        <button onClick={onOpenBracket} className="rounded-xl bg-colmado-tan/30 px-4 py-2 font-bold text-sm hover:bg-colmado-tan/50">
+          Bracket
         </button>
-        <button 
-          onClick={onOpenLeaderboard}
-          className="rounded-xl bg-colmado-gold hover:bg-amber-600 px-4 py-2 font-bold text-white shadow transition-transform active:scale-95 text-sm"
-        >
-          🏆 Leaderboard
+        <button onClick={onOpenLeaderboard} className="rounded-xl bg-colmado-tan/30 px-4 py-2 font-bold text-sm hover:bg-colmado-tan/50">
+          Standings
         </button>
-        <button 
-          onClick={onOpenRules}
-          className="rounded-xl bg-colmado-felt hover:bg-opacity-90 px-4 py-2 font-bold text-white shadow transition-transform active:scale-95 text-sm"
-        >
-          📜 Rules
-        </button>
-        <button 
-          onClick={onOpenScoreEntry}
-          className="rounded-xl bg-colmado-chili hover:bg-red-700 px-4 py-2 font-bold text-white shadow transition-transform active:scale-95 text-sm"
-        >
-          📝 Score Entry
+        <button onClick={onOpenRules} className="rounded-xl bg-colmado-tan/30 px-4 py-2 font-bold text-sm hover:bg-colmado-tan/50">
+          Rules
         </button>
       </div>
-    </nav>
+
+      {/* Advance Round Action Mechanism */}
+      <button
+        disabled={isNextRoundDisabled}
+        onClick={onNextRound}
+        className={`rounded-xl px-5 py-2.5 font-black text-white shadow transition-all
+          ${isNextRoundDisabled 
+            ? 'bg-gray-300 cursor-not-allowed opacity-50' 
+            : 'bg-colmado-chili hover:scale-[1.03] active:scale-95'}`}
+      >
+        Advance to Round {currentRound + 1} →
+      </button>
+    </div>
   );
 }

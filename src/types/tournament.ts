@@ -1,10 +1,3 @@
-export interface TableSeats {
-  north: string;
-  east: string;
-  south: string;
-  west: string;
-}
-
 export interface LeaderboardPlayer {
   name: string;
   points: number;
@@ -14,10 +7,6 @@ export interface GameHeaderProps {
   roundNumber?: number;
 }
 
-export interface RegisteredPlayersProps {
-  players: string[];
-}
-
 export interface BracketColumnProps {
   title: string;
   players: string[];
@@ -25,21 +14,11 @@ export interface BracketColumnProps {
   danger?: boolean;
 }
 
-export interface BracketProgressionProps {
-  roundPlayers: string[];
-  winners: string[];
-  losers: string[];
-}
-
 export interface TableSeats {
   north: string;
   east: string;
   south: string;
   west: string;
-}
-
-export interface GameHeaderProps {
-  roundNumber?: number;
 }
 
 export interface ModalProps {
@@ -73,6 +52,9 @@ export interface ControlPanelProps {
   onOpenLeaderboard: () => void;
   onOpenRules: () => void;
   onOpenScoreEntry: () => void;
+  onNextRound: () => void;
+  isNextRoundDisabled: boolean;
+  currentRound: number;
 }
 
 export interface ScoreEntryProps {
@@ -101,4 +83,11 @@ export interface CurrentGamesProps {
   tableB: TableSeats;
   scores: Record<string, number>;
   onEnterScores: (tablePlayers: string[]) => void;
+}
+
+export interface TieBreakerContext {
+  tableKey: 'tableA' | 'tableB';
+  tableTitle: string;
+  type: '1st_place_3way' | '2nd_place_tie';
+  tiedPlayers: string[];
 }
