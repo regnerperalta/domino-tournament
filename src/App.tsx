@@ -20,11 +20,11 @@ export default function App() {
   const [stage, setStage] = useState<'setup' | 'tournament'>('setup');
   const [players, setPlayers] = useState<string[]>([]);
   
-  // Track structural tournament rounds progression boundaries (1 to 3)
+  // Track structural tournament rounds progression boundaries (1 to 3, then 4 = Finals)
   const [currentRound, setCurrentRound] = useState<number>(1);
   
-  // History ledger array index-matched to rounds (0 = Round 1, 1 = Round 2, etc.)
-  const [roundHistory, setRoundHistory] = useState<Record<string, number>[]>([{}, {}, {}]);
+  // History ledger array index-matched to rounds (0 = R1, 1 = R2, 2 = R3, 3+ = Finals)
+  const [roundHistory, setRoundHistory] = useState<Record<string, number>[]>([{}, {}, {}, {}, {}, {}]);
   
   // Tracks tables submitted in the current active round
   const [submittedTables, setSubmittedTables] = useState<Record<string, boolean>>({ tableA: false, tableB: false });
@@ -34,6 +34,9 @@ export default function App() {
     tableA: { north: '', south: '', east: '', west: '' },
     tableB: { north: '', south: '', east: '', west: '' }
   });
+
+  // Track the golden tickets—players who bypass Round 3 straight into the Finals
+  const [finalsBypassPlayers, setFinalsBypassPlayers] = useState<string[]>([]);
 
   // Intercept Queue and State for handling manual admin tie-breakers
   const [tieBreakerQueue, setTieBreakerQueue] = useState<TieBreakerContext[]>([]);
@@ -105,7 +108,7 @@ export default function App() {
 
   // Helper helper to isolate, cross-reference and sort players by local score
   const getSortedTableData = (seats: TableSeats, scoresLedger: Record<string, number>) => {
-    const roster = [seats.north, seats.south, seats.east, seats.west];
+    const roster = [seats.north, seats.south, seats.east, seats.west].filter(Boolean);
     return roster.map(p => ({ name: p, score: scoresLedger[p] || 0 }))
                  .sort((a, b) => b.score - a.score);
   };
@@ -122,51 +125,48 @@ export default function App() {
 
     // --- ANALYZE TABLE A FOR TIES ---
     const sortedA = getSortedTableData(activeTables.tableA, scoresLedger);
-    // Case 1: 3-way tie for 1st place
-    if (sortedA[0].score === sortedA[1].score && sortedA[1].score === sortedA[2].score) {
+    if (sortedA.length >= 3 && sortedA[0].score === sortedA[1].score && sortedA[1].score === sortedA[2].score) {
       newQueue.push({
         tableKey: 'tableA',
-        tableTitle: "Table A (Winner's Pool)",
+        tableTitle: currentRound === 1 ? "Table A (Winner's Pool)" : "Table A (Winners Bracket)",
         type: '1st_place_3way',
         tiedPlayers: [sortedA[0].name, sortedA[1].name, sortedA[2].name]
       });
     }
-    // Case 2: Tie for 2nd place
-    else if (sortedA[1].score === sortedA[2].score) {
+    else if (sortedA.length >= 3 && sortedA[1].score === sortedA[2].score) {
       const tied = [sortedA[1].name, sortedA[2].name];
-      if (sortedA[2].score === sortedA[3].score) tied.push(sortedA[3].name);
+      if (sortedA[3] && sortedA[2].score === sortedA[3].score) tied.push(sortedA[3].name);
       newQueue.push({
         tableKey: 'tableA',
-        tableTitle: "Table A (Winner's Pool)",
+        tableTitle: currentRound === 1 ? "Table A (Winner's Pool)" : "Table A (Winners Bracket)",
         type: '2nd_place_tie',
         tiedPlayers: tied
       });
     }
 
-    // --- ANALYZE TABLE B FOR TIES ---
-    const sortedB = getSortedTableData(activeTables.tableB, scoresLedger);
-    // Case 1: 3-way tie for 1st place
-    if (sortedB[0].score === sortedB[1].score && sortedB[1].score === sortedB[2].score) {
-      newQueue.push({
-        tableKey: 'tableB',
-        tableTitle: "Table B (Loser's Pool)",
-        type: '1st_place_3way',
-        tiedPlayers: [sortedB[0].name, sortedB[1].name, sortedB[2].name]
-      });
-    }
-    // Case 2: Tie for 2nd place
-    else if (sortedB[1].score === sortedB[2].score) {
-      const tied = [sortedB[1].name, sortedB[2].name];
-      if (sortedB[2].score === sortedB[3].score) tied.push(sortedB[3].name);
-      newQueue.push({
-        tableKey: 'tableB',
-        tableTitle: "Table B (Loser's Pool)",
-        type: '2nd_place_tie',
-        tiedPlayers: tied
-      });
+    // --- ANALYZE TABLE B FOR TIES (Only checked in Round 1 going to Round 2) ---
+    if (activeTables.tableB.north !== '') {
+      const sortedB = getSortedTableData(activeTables.tableB, scoresLedger);
+      if (sortedB.length >= 3 && sortedB[0].score === sortedB[1].score && sortedB[1].score === sortedB[2].score) {
+        newQueue.push({
+          tableKey: 'tableB',
+          tableTitle: currentRound === 1 ? "Table B (Loser's Pool)" : "Table B (Losers Bracket)",
+          type: '1st_place_3way',
+          tiedPlayers: [sortedB[0].name, sortedB[1].name, sortedB[2].name]
+        });
+      }
+      else if (sortedB.length >= 3 && sortedB[1].score === sortedB[2].score) {
+        const tied = [sortedB[1].name, sortedB[2].name];
+        if (sortedB[3] && sortedB[2].score === sortedB[3].score) tied.push(sortedB[3].name);
+        newQueue.push({
+          tableKey: 'tableB',
+          tableTitle: currentRound === 1 ? "Table B (Loser's Pool)" : "Table B (Losers Bracket)",
+          type: '2nd_place_tie',
+          tiedPlayers: tied
+        });
+      }
     }
 
-    // Intercept if choices need to be declared by the administrator
     if (newQueue.length > 0) {
       setTieBreakerQueue(newQueue);
       setTieSelections({}); 
@@ -174,7 +174,6 @@ export default function App() {
       return;
     }
 
-    // If completely clear, advance automatically using standard points distribution arrays
     executeProgression();
   };
 
@@ -186,10 +185,9 @@ export default function App() {
       const sorted = getSortedTableData(seats, scoresLedger);
       const selectionStr = tieSelections[tableKey];
       
-      // If a tie-breaker was processed for this table, reorganize the arrays by utilizing the admin keys
       if (selectionStr) {
         const winners: string[] = JSON.parse(selectionStr);
-        const losers = [seats.north, seats.south, seats.east, seats.west].filter(p => !winners.includes(p));
+        const losers = [seats.north, seats.south, seats.east, seats.west].filter(p => p && !winners.includes(p));
         return [...winners, ...losers];
       }
       
@@ -197,21 +195,45 @@ export default function App() {
     };
 
     const orderedA = finalizeRosterOrder(activeTables.tableA, 'tableA');
-    const orderedB = finalizeRosterOrder(activeTables.tableB, 'tableB');
+    
+    if (currentRound === 1) {
+      // --- ROUND 1 -> ROUND 2 (Standard Combined Progression) ---
+      const orderedB = finalizeRosterOrder(activeTables.tableB, 'tableB');
 
-    // Combined Progression Mapping: Top 2 from each go to Table A, bottom 2 from each drop to Table B
-    const nextTableA: TableSeats = {
-      north: orderedA[0], south: orderedA[1],
-      east: orderedB[0], west: orderedB[1]
-    };
+      const nextTableA: TableSeats = {
+        north: orderedA[0], south: orderedA[1],
+        east: orderedB[0], west: orderedB[1]
+      };
 
-    const nextTableB: TableSeats = {
-      north: orderedA[2], south: orderedA[3],
-      east: orderedB[2], west: orderedB[3]
-    };
+      const nextTableB: TableSeats = {
+        north: orderedA[2], south: orderedA[3],
+        east: orderedB[2], west: orderedB[3]
+      };
 
-    setActiveTables({ tableA: nextTableA, tableB: nextTableB });
-    setSubmittedTables({ tableA: false, tableB: false });
+      setActiveTables({ tableA: nextTableA, tableB: nextTableB });
+      setSubmittedTables({ tableA: false, tableB: false });
+    } else if (currentRound === 2) {
+      // --- ROUND 2 -> ROUND 3 (Elimination Rules) ---
+      const orderedB = finalizeRosterOrder(activeTables.tableB, 'tableB');
+
+      // Top 2 from Table A bypass directly to finals
+      setFinalsBypassPlayers([orderedA[0], orderedA[1]]);
+
+      // Round 3 Single "Last Chance" Table assembly: Bottom 2 from Table A + Top 2 from Table B
+      const nextTableA: TableSeats = {
+        north: orderedA[2], // 3rd from Table A
+        south: orderedA[3], // 4th from Table A
+        east: orderedB[0],  // 1st from Table B
+        west: orderedB[1]   // 2nd from Table B
+      };
+
+      // Table B is empty for Round 3 (bottom 2 from Table B eliminated)
+      const nextTableB: TableSeats = { north: '', south: '', east: '', west: '' };
+
+      setActiveTables({ tableA: nextTableA, tableB: nextTableB });
+      setSubmittedTables({ tableA: false, tableB: true }); // Automatically bypass lock on empty Table B
+    }
+
     setShowTieModal(false);
     setCurrentRound(prev => prev + 1);
   };
@@ -224,7 +246,7 @@ export default function App() {
     executeProgression();
   };
 
-  // Enforcement check locking the progression engine down until everything matches validation
+  // Enforcement check verification
   const areScoresMissing = !submittedTables.tableA || !submittedTables.tableB;
 
   if (stage === 'setup') {
@@ -238,16 +260,28 @@ export default function App() {
         <GameHeader roundNumber={currentRound} />
 
         <main className="w-full">
-          <CurrentGames 
-            tableA={activeTables.tableA} 
-            tableB={activeTables.tableB} 
-            // Feeds ONLY current active round scores down to domino table seats
-            scores={roundHistory[currentRound - 1] || {}} 
-            onEnterScores={(playersList) => {
-              const key = playersList.includes(activeTables.tableA.north) ? 'tableA' : 'tableB';
-              handleOpenTableScoreEntry(key, activeTables[key]);
-            }} 
-          />
+          {currentRound === 3 ? (
+            // --- ROUND 3 ELIMINATION VIEW: Render ONLY Table A ---
+            <div className="max-w-2xl mx-auto">
+              <CurrentGames 
+                tableA={activeTables.tableA} 
+                tableB={activeTables.tableB} 
+                scores={roundHistory[currentRound - 1] || {}} 
+                onEnterScores={(playersList) => handleOpenTableScoreEntry('tableA', activeTables.tableA)} 
+              />
+            </div>
+          ) : (
+            // --- STANDARD MULTI-TABLE VIEW (Round 1 & 2) ---
+            <CurrentGames 
+              tableA={activeTables.tableA} 
+              tableB={activeTables.tableB} 
+              scores={roundHistory[currentRound - 1] || {}} 
+              onEnterScores={(playersList) => {
+                const key = playersList.includes(activeTables.tableA.north) ? 'tableA' : 'tableB';
+                handleOpenTableScoreEntry(key, activeTables[key]);
+              }} 
+            />
+          )}
         </main>
 
         <ControlPanel 
@@ -274,7 +308,14 @@ export default function App() {
         </Modal>
 
         <Modal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} title={MODAL_TITLES_CONFIG.LEADERBOARD}>
-          <Leaderboard leaderboard={currentLeaderboard} />
+          <div className="space-y-4">
+            {finalsBypassPlayers.length > 0 && (
+              <div className="p-3 bg-green-50 rounded-xl border border-green-200 text-sm font-medium text-green-800">
+                🚀 <strong>Bypassed to Finals:</strong> {finalsBypassPlayers.join(' & ')}
+              </div>
+            )}
+            <Leaderboard leaderboard={currentLeaderboard} />
+          </div>
         </Modal>
 
         <Modal isOpen={showRules} onClose={() => setShowRules(false)} title={MODAL_TITLES_CONFIG.RULES}>
