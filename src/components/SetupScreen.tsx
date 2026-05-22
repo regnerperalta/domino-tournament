@@ -3,7 +3,7 @@ import type { SetupScreenProps } from '../types/tournament';
 
 export default function SetupScreen({ onStartTournament }: SetupScreenProps) {
   const [inputs, setInputs] = useState<string[]>([
-    "Luis", "Carlos", "Miguel", "Jose", "Ramon", "Ana", "Roberto", "Victor"
+    "Manolo", "Chino", "Marcos", "Frank", "Mama", "Elizabeth", "Norma", "Regner"
   ]);
 
   const handleInputChange = (index: number, value: string) => {
